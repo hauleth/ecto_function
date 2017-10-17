@@ -42,7 +42,10 @@ defmodule Ecto.Function do
         {:\\, _, [{_, _, _} = arg, _default]} -> arg
         {_, _, env} = arg when is_atom(env) -> arg
         token ->
-          raise CompileError, file: __ENV__.file, line: __ENV__.line, description: "Unexpected #{inspect token}"
+          raise CompileError,
+            file: __ENV__.file,
+            line: __ENV__.line,
+            description: "Unexpected #{inspect token}"
       end)
 
     {query, args}
