@@ -1,18 +1,32 @@
-defmodule EctoFunction do
+defmodule Ecto.Function do
   @moduledoc """
   Documentation for EctoFunction.
   """
 
-  @doc """
-  Hello world.
+  defmacro defqueryfunc({name, _, args}, opts \\ [])
+  when is_atom(name) and is_list(args) do
+    {query, args} = build_query(args)
 
-  ## Examples
+    quote do
+      defmacro unquote(name)(unquote_splicing(args)) do
+        unquote(body(name, query, args))
+      end
+    end
+  end
 
-      iex> EctoFunction.hello
-      :world
+  defp body(name, query, args) do
+    fcall = "#{name}(#{query})"
+    args = Enum.map(args, &{:unquote, [], [&1]})
 
-  """
-  def hello do
-    :world
+    {:quote, [], [[do: {:fragment, [], [fcall | args]}]]}
+  end
+
+  defp build_query(args, joiner \\ ",") do
+    query =
+      "?"
+      |> List.duplicate(Enum.count(args))
+      |> Enum.join(joiner)
+
+    {query, args}
   end
 end
