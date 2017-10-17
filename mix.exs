@@ -10,6 +10,11 @@ defmodule EctoFunction.Mixfile do
       deps: deps(),
 
       name: "Ecto.Function",
+      description: """
+      Simple macro for defining macro that will return `fragment` with SQL function.
+
+      A little bit Xzibit, but fun.
+      """,
 
       package: package()
     ]
@@ -30,7 +35,7 @@ defmodule EctoFunction.Mixfile do
      files: ["lib", "mix.exs", "README*", "LICENSE*"],
      licenses: ["MIT"],
      links: %{
-       "GitHub" => "https://github.com/hauleth/ecto_olap"
+       "GitHub" => "https://github.com/hauleth/ecto_function"
      }]
   end
 end

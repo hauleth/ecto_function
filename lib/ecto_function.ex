@@ -3,20 +3,22 @@ defmodule Ecto.Function do
   Documentation for EctoFunction.
   """
 
-  defmacro defqueryfunc({:/, _, {name, _, _}, args_count})
-  when is_atom(name) and is_integer(args_count) do
-    args = Macro.generate_arguments(args_count, Elixir)
+  defmacro defqueryfunc({:/, _, [{name, _, _}, params_count]})
+  when is_atom(name) and is_integer(params_count) do
+    params = Macro.generate_arguments(params_count, Elixir)
 
-    macro(name, args)
+    macro(name, params)
   end
-  defmacro defqueryfunc({name, _, args})
-  when is_atom(name) and is_list(args), do: macro(name, args)
+  defmacro defqueryfunc({name, _, params})
+  when is_atom(name) and is_list(params) do
+    macro(name, params)
+  end
 
-  defp macro(name, args) do
-    {query, args} = build_query(args)
+  defp macro(name, params) do
+    {query, args} = build_query(params)
 
     quote do
-      defmacro unquote(name)(unquote_splicing(args)) do
+      defmacro unquote(name)(unquote_splicing(params)) do
         unquote(body(name, query, args))
       end
     end
@@ -34,6 +36,14 @@ defmodule Ecto.Function do
       "?"
       |> List.duplicate(Enum.count(args))
       |> Enum.join(joiner)
+    args =
+      args
+      |> Enum.map(fn
+        {:\\, _, [{_, _, _} = arg, _default]} -> arg
+        {_, _, env} = arg when is_atom(env) -> arg
+        token ->
+          raise CompileError, file: __ENV__.file, line: __ENV__.line, description: "Unexpected #{inspect token}"
+      end)
 
     {query, args}
   end
