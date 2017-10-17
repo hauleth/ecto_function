@@ -10,23 +10,35 @@ defmodule Ecto.FunctionTest do
   doctest Ecto.Function
 
   describe "compilation" do
-    test "the module with defined macro compiles" do
+    test "with defined macro compiles" do
       code = """
       import Ecto.Function
 
-      defmodule Foo do
+      defmodule Test1 do
         defqueryfunc test(a, b)
       end
       """
 
-      assert match?([{Foo, _}], Code.compile_string(code))
+      assert match?([{Test1, _}], Code.compile_string(code))
+    end
+
+    test "with defined macro using slashed syntax compiles" do
+      code = """
+      import Ecto.Function
+
+      defmodule Test2 do
+        defqueryfunc test/2
+      end
+      """
+
+      assert match?([{Test2, _}], Code.compile_string(code))
     end
 
     test "do not compiles when params aren't correct" do
       code = """
       import Ecto.Function
 
-      defmodule Foo do
+      defmodule Test3 do
         defqueryfunc test(a, foo(funky))
       end
       """

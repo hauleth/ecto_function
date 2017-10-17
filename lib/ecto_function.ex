@@ -3,8 +3,16 @@ defmodule Ecto.Function do
   Documentation for EctoFunction.
   """
 
-  defmacro defqueryfunc({name, _, args}, opts \\ [])
-  when is_atom(name) and is_list(args) do
+  defmacro defqueryfunc({:/, _, {name, _, _}, args_count})
+  when is_atom(name) and is_integer(args_count) do
+    args = Macro.generate_arguments(args_count, Elixir)
+
+    macro(name, args)
+  end
+  defmacro defqueryfunc({name, _, args})
+  when is_atom(name) and is_list(args), do: macro(name, args)
+
+  defp macro(name, args) do
     {query, args} = build_query(args)
 
     quote do
