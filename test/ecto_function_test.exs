@@ -71,9 +71,11 @@ defmodule Ecto.FunctionTest do
       end
       """
 
-      assert_raise CompileError, fn ->
-        Code.compile_string(code)
-      end
+      assert_raise CompileError,
+        "nofile:4: Expected argument got foo(funky)",
+        fn ->
+          Code.compile_string(code)
+        end
     end
   end
 

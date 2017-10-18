@@ -7,15 +7,15 @@ defmodule Ecto.Function do
   when is_atom(name) and is_integer(params_count) do
     params = Macro.generate_arguments(params_count, Elixir)
 
-    macro(name, params)
+    macro(name, params, __CALLER__)
   end
   defmacro defqueryfunc({name, _, params})
   when is_atom(name) and is_list(params) do
-    macro(name, params)
+    macro(name, params, __CALLER__)
   end
 
-  defp macro(name, params) do
-    {query, args} = build_query(params)
+  defp macro(name, params, caller) do
+    {query, args} = build_query(params, caller)
 
     quote do
       defmacro unquote(name)(unquote_splicing(params)) do
@@ -31,7 +31,7 @@ defmodule Ecto.Function do
     {:quote, [], [[do: {:fragment, [], [fcall | args]}]]}
   end
 
-  defp build_query(args, joiner \\ ",") do
+  defp build_query(args, joiner \\ ",", caller) do
     query =
       "?"
       |> List.duplicate(Enum.count(args))
@@ -43,9 +43,9 @@ defmodule Ecto.Function do
         {_, _, env} = arg when is_atom(env) -> arg
         token ->
           raise CompileError,
-            file: __ENV__.file,
-            line: __ENV__.line,
-            description: "Unexpected #{inspect token}"
+            file: caller.file,
+            line: caller.line,
+            description: "Expected argument got #{Macro.to_string token}"
       end)
 
     {query, args}
