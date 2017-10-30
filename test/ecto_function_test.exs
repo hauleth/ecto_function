@@ -6,6 +6,8 @@ defmodule Functions do
   defqueryfunc sqrt/1
 
   defqueryfunc regr_syy(y, x \\ 0)
+
+  defqueryfunc regr_x(y \\ 0, x), for: "regr_sxx"
 end
 
 defmodule Ecto.FunctionTest do
@@ -26,53 +28,59 @@ defmodule Ecto.FunctionTest do
   end
 
   describe "compilation" do
-    test "with defined macro compiles" do
+    setup do
+      mod = String.to_atom("Elixir.Test#{System.unique_integer([:positive])}")
+
+      {:ok, mod: mod}
+    end
+
+    test "with defined macro compiles", %{mod: mod} do
       code = """
       import Ecto.Function
 
-      defmodule Test1 do
-      defqueryfunc test(a, b)
+      defmodule :'#{mod}' do
+        defqueryfunc test(a, b)
       end
       """
 
-      assert match?([{Test1, _}], Code.compile_string(code))
+      assert match?([{^mod, _}], Code.compile_string(code))
     end
 
-    test "with defined macro using slashed syntax compiles" do
+    test "with defined macro using slashed syntax compiles", %{mod: mod} do
       code = """
       import Ecto.Function
 
-      defmodule Test2 do
-      defqueryfunc test/2
+      defmodule :'#{mod}' do
+        defqueryfunc test/2
       end
       """
 
-      assert match?([{Test2, _}], Code.compile_string(code))
+      assert match?([{^mod, _}], Code.compile_string(code))
     end
 
-    test "with default params" do
+    test "with default params", %{mod: mod} do
       code = """
       import Ecto.Function
 
-      defmodule Test4 do
-      defqueryfunc test(a, b \\\\ 1)
+      defmodule :'#{mod}' do
+        defqueryfunc test(a, b \\\\ 1)
       end
       """
 
-      assert match?([{Test4, _}], Code.compile_string(code))
+      assert match?([{^mod, _}], Code.compile_string(code))
     end
 
-    test "do not compiles when params aren't correct" do
+    test "do not compiles when params aren't correct", %{mod: mod} do
       code = """
       import Ecto.Function
 
-      defmodule Test3 do
-      defqueryfunc test(a, foo(funky))
+      defmodule :'#{mod}' do
+        defqueryfunc test(a, foo(funky))
       end
       """
 
       assert_raise CompileError,
-        "nofile:4: Expected argument got foo(funky)",
+        "nofile:4: only variables and \\\\ are allowed as arguments in definition header.",
         fn ->
           Code.compile_string(code)
         end
@@ -133,6 +141,17 @@ defmodule Ecto.FunctionTest do
 
     test "when called with one argument" do
       result = Repo.all from item in "example", select: regr_syy(item.value)
+
+      assert result == [82.5]
+    end
+  end
+
+  describe "example function delegated to different name" do
+    import Ecto.Query
+    import Functions
+
+    test "when return correct computation" do
+      result = Repo.all from item in "example", select: regr_x(item.value)
 
       assert result == [82.5]
     end

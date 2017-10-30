@@ -4,7 +4,7 @@ defmodule EctoFunction.Mixfile do
   def project do
     [
       app: :ecto_function,
-      version: "0.1.0",
+      version: "1.0.0",
       elixir: "~> 1.5",
       start_permanent: Mix.env == :prod,
       deps: deps(),
@@ -16,7 +16,8 @@ defmodule EctoFunction.Mixfile do
       A little bit Xzibit, but fun.
       """,
 
-      package: package()
+      package: package(),
+      docs: [main: "readme", extras: ["README.md"]]
     ]
   end
 
