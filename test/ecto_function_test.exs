@@ -93,8 +93,7 @@ defmodule Ecto.FunctionTest do
 
     test "return correct computation" do
       result = Repo.all from item in "example", select: cbrt(item.value)
-
-      assert result == [
+      expected = [
         1.0,
         1.2599210498948732,
         1.4422495703074083,
@@ -105,6 +104,10 @@ defmodule Ecto.FunctionTest do
         2.0,
         2.080083823051904,
         2.154434690031884]
+
+      for {res, exp} <- Enum.zip(result, expected) do
+        assert_in_delta res, exp, 0.0000001
+      end
     end
   end
 
@@ -114,8 +117,7 @@ defmodule Ecto.FunctionTest do
 
     test "return correct computation" do
       result = Repo.all from item in "example", select: sqrt(item.value)
-
-      assert Enum.map(result, &Decimal.to_float/1) == [
+      expected = [
         1.000000000000000,
         1.414213562373095,
         1.732050807568877,
@@ -126,6 +128,10 @@ defmodule Ecto.FunctionTest do
         2.828427124746190,
         3.000000000000000,
         3.162277660168379]
+
+      for {res, exp} <- Enum.zip(result, expected) do
+        assert_in_delta Decimal.to_float(res), exp, 0.0000001
+      end
     end
   end
 
@@ -134,15 +140,15 @@ defmodule Ecto.FunctionTest do
     import Functions
 
     test "when called with both arguments" do
-      result = Repo.all from item in "example", select: regr_syy(item.value, 0)
+      result = Repo.one! from item in "example", select: regr_syy(item.value, 0)
 
-      assert result == [82.5]
+      assert_in_delta result, 82.5, 0.0000001
     end
 
     test "when called with one argument" do
-      result = Repo.all from item in "example", select: regr_syy(item.value)
+      result = Repo.one! from item in "example", select: regr_syy(item.value)
 
-      assert result == [82.5]
+      assert_in_delta result, 82.5, 0.0000001
     end
   end
 
@@ -151,9 +157,9 @@ defmodule Ecto.FunctionTest do
     import Functions
 
     test "when return correct computation" do
-      result = Repo.all from item in "example", select: regr_x(item.value)
+      result = Repo.one! from item in "example", select: regr_x(item.value)
 
-      assert result == [82.5]
+      assert_in_delta result, 82.5, 0.0000001
     end
   end
 end
