@@ -12,7 +12,7 @@ The package can be installed by adding `ecto_function` to your list of dependenc
 ```elixir
 def deps do
   [
-    {:ecto_function, "~> 1.0.0"}
+    {:ecto_function, "~> 1.0.1"}
   ]
 end
 ```
