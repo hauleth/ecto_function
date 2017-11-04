@@ -1,16 +1,7 @@
-ExUnit.start()
-
 alias Ecto.Integration.Repo
 
-Application.put_env(:ecto, Repo,
-  adapter: Ecto.Adapters.Postgres,
-  database: "ecto_function_test",
-  pool: Ecto.Adapters.SQL.Sandbox)
-
 defmodule Ecto.Integration.Repo do
-  use Ecto.Repo, otp_app: :ecto
-
-  def log(_cmd), do: nil
+  use Ecto.Repo, otp_app: :ecto_function
 end
 
 # Load up the repository, start it, and run migrations
@@ -27,3 +18,5 @@ Process.flag(:trap_exit, true)
 
 :ok = Repo.stop(pid)
 {:ok, _pid} = Repo.start_link()
+
+ExUnit.start()
