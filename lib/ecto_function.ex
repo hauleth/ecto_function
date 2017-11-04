@@ -56,6 +56,8 @@ defmodule Ecto.Function do
 
   This case probably will never be supported in this library and you should
   handle it on your own.
+
+  [extract]: https://www.postgresql.org/docs/current/static/functions-datetime.html#functions-datetime-extract
   """
   defmacro defqueryfunc(definition, opts \\ [])
   defmacro defqueryfunc({:/, _, [{name, _, _}, params_count]}, opts)
