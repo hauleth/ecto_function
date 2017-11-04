@@ -1,6 +1,82 @@
 # Ecto.Function
 
+[![Hex.pm](https://img.shields.io/hexpm/hauleth/ecto_function.svg)](https://hex.pm/packages/ecto_function)
+[![Travis](https://img.shields.io/travis/hauleth/ecto_function.svg)](https://travis-ci.org/hauleth/ecto_function)
+
 Helper macro for defining macros that simplifies calling DB functions.
+
+## Installation
+
+The package can be installed by adding `ecto_function` to your list of dependencies in `mix.exs`:
+
+```elixir
+def deps do
+  [
+    {:ecto_function, "~> 1.0.0"}
+  ]
+end
+```
+
+The docs can be found at <https://hexdocs.pm/ecto_function>.
+
+## Usage
+
+When you use a lot of DB functions inside your queries then this probably looks
+like this:
+
+```elixir
+from item in "items",
+  where: fragment("date_trunc(?, ?)", "hour", item.inserted_at) < fragment("date_trunc(?, ?)", "hour", fragment("now()")),
+  select: %{regr: fragment("regr_sxy(?, ?)", item.y, item.x)}
+```
+
+There are a lot of `fragment` calls which makes code quite challenging to read.
+However there is way out for such code, you can write macros:
+
+```elixir
+defmodule Foo do
+  defmacro date_trunc(part, field) do
+    quote do: fragment("date_trunc(?, ?)", ^part, ^field)
+  end
+
+  defmacro now do
+    quote do: fragment("now()")
+  end
+
+  defmacro regr_sxy(y, x) do
+    quote do: fragment("regr_sxy(y, x)", ^y, ^x)
+  end
+end
+```
+
+And then cleanup your query to:
+
+```elixir
+import Foo
+import Ecto.Query
+
+from item in "items",
+  where: date_trunc("hour", item.inserted_at) < date_trunc("hour", now()),
+  select: %{regr: regr_sxy(item.y, item.x)}
+```
+
+However there is still a lot of repetition in your new fancy helper module. You
+need to repeat function name twice, name each argument, insert all that carets
+and stuff.
+
+What about little help?
+
+```elixir
+defmodule Foo do
+  import Ecto.Function
+
+  defqueryfunc date_trunc(part, field)
+  defqueryfunc now
+  defqueryfunc regr_sxy/2
+end
+```
+
+Much cleaner…
 
 ## Reasoning
 
@@ -33,23 +109,6 @@ Because there is no need. Personally I would like to see Ecto splitted a little,
 like changesets should be in separate library in my humble opinion. Also I
 believe that such PR would never be merged as "non scope" for the reasons I gave
 earlier.
-
-## Installation
-
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `ecto_function` to your list of dependencies in `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:ecto_function, "~> 1.0.0"}
-  ]
-end
-```
-
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/ecto_function](https://hexdocs.pm/ecto_function).
 
 [chapter]: https://www.postgresql.org/docs/current/static/functions.html "Chapter 9. Functions and Operators"
 [olap]: https://github.com/hauleth/ecto_olap

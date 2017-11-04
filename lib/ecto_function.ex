@@ -5,7 +5,7 @@ defmodule Ecto.Function do
   A little Xzibity, but helps.
   """
 
-  @doc """
+  @doc ~S"""
   Define new SQL function call.
 
   ## Options
