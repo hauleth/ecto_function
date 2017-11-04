@@ -1,6 +1,6 @@
 # Ecto.Function
 
-[![Hex.pm](https://img.shields.io/hexpm/hauleth/ecto_function.svg)](https://hex.pm/packages/ecto_function)
+[![Hex.pm](https://img.shields.io/hexpm/dt/ecto_function.svg)](https://hex.pm/packages/ecto_function)
 [![Travis](https://img.shields.io/travis/hauleth/ecto_function.svg)](https://travis-ci.org/hauleth/ecto_function)
 
 Helper macro for defining macros that simplifies calling DB functions.
