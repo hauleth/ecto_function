@@ -60,29 +60,33 @@ defmodule Ecto.Function do
   [extract]: https://www.postgresql.org/docs/current/static/functions-datetime.html#functions-datetime-extract
   """
   defmacro defqueryfunc(definition, opts \\ [])
+
   defmacro defqueryfunc({:/, _, [{name, _, _}, params_count]}, opts)
-  when is_atom(name) and is_integer(params_count) do
+           when is_atom(name) and is_integer(params_count) do
     opts = Keyword.put_new(opts, :for, name)
     params = Macro.generate_arguments(params_count, Elixir)
 
     macro(name, params, __CALLER__, opts)
   end
+
   defmacro defqueryfunc({name, _, params}, opts)
-  when is_atom(name) and is_list(params) do
+           when is_atom(name) and is_list(params) do
     opts = Keyword.put_new(opts, :for, name)
 
     macro(name, params, __CALLER__, opts)
   end
+
   defmacro defqueryfunc(name, opts) when is_atom(name) do
     opts = Keyword.put_new(opts, :for, name)
 
     macro(name, [], __CALLER__, opts)
   end
+
   defmacro defqueryfunc(tree, _) do
     raise CompileError,
       file: __CALLER__.file,
       line: __CALLER__.line,
-      description: "Unexpected query function definition #{Macro.to_string tree}."
+      description: "Unexpected query function definition #{Macro.to_string(tree)}."
   end
 
   defp macro(name, params, caller, opts) do
@@ -108,16 +112,21 @@ defmodule Ecto.Function do
       "?"
       |> List.duplicate(Enum.count(args))
       |> Enum.join(",")
+
     args =
       args
       |> Enum.map(fn
-        {:\\, _, [{_, _, _} = arg, _default]} -> arg
-        {_, _, env} = arg when is_atom(env) -> arg
+        {:\\, _, [{_, _, _} = arg, _default]} ->
+          arg
+
+        {_, _, env} = arg when is_atom(env) ->
+          arg
+
         _token ->
           raise CompileError,
             file: caller.file,
             line: caller.line,
-            description: "only variables and \\\\ are allowed as arguments in definition header."
+            description: ~S"only variables and \\ are allowed as arguments in definition header."
       end)
 
     {query, args}
