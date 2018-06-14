@@ -76,7 +76,7 @@ defmodule Ecto.Function do
     macro(name, params, __CALLER__, opts)
   end
 
-  defmacro defqueryfunc(name, opts) when is_atom(name) do
+  defmacro defqueryfunc({name, _, _}, opts) when is_atom(name) do
     opts = Keyword.put_new(opts, :for, name)
 
     macro(name, [], __CALLER__, opts)

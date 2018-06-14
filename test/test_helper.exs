@@ -5,12 +5,12 @@ defmodule Ecto.Integration.Repo do
 end
 
 # Load up the repository, start it, and run migrations
-_   = Ecto.Adapters.Postgres.storage_down(Repo.config)
-:ok = Ecto.Adapters.Postgres.storage_up(Repo.config)
+_ = Ecto.Adapters.Postgres.storage_down(Repo.config())
+:ok = Ecto.Adapters.Postgres.storage_up(Repo.config())
 
 {:ok, pid} = Repo.start_link()
 
-Code.require_file "support/migration.exs", __DIR__
+Code.require_file("support/migration.exs", __DIR__)
 
 :ok = Ecto.Migrator.up(Repo, 0, Ecto.Integration.Migration, log: false)
 Ecto.Adapters.SQL.Sandbox.mode(Repo, :manual)
