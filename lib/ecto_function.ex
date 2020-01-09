@@ -63,8 +63,16 @@ defmodule Ecto.Function do
 
   defmacro defqueryfunc({:/, _, [{name, _, _}, params_count]}, opts)
            when is_atom(name) and is_integer(params_count) do
+    require Logger
+
     opts = Keyword.put_new(opts, :for, name)
     params = Macro.generate_arguments(params_count, Elixir)
+
+    Logger.warn("""
+    func/arity syntax is deprecated, instead use:
+
+        defqueryfunc #{Macro.to_string(quote do: unquote(name)(unquote_splicing(params)))}
+    """)
 
     macro(name, params, __CALLER__, opts)
   end

@@ -5,9 +5,7 @@ use Mix.Config
 config :logger, level: :warn
 
 config :ecto_function, Ecto.Integration.Repo,
-  adapter: Ecto.Adapters.Postgres,
   username: "postgres",
-  password: "",
-  hostname: "localhost",
+  socket_dir: System.get_env("PGHOST"),
   database: "ecto_function_test",
   pool: Ecto.Adapters.SQL.Sandbox

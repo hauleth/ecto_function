@@ -13,6 +13,8 @@ end
 defmodule Ecto.FunctionTest do
   use ExUnit.Case
 
+  import ExUnit.CaptureLog
+
   alias Ecto.Integration.Repo
 
   doctest Ecto.Function
@@ -43,7 +45,7 @@ defmodule Ecto.FunctionTest do
       end
       """
 
-      assert match?([{^mod, _}], Code.compile_string(code))
+      assert [{^mod, _}] = Code.compile_string(code)
       assert macro_exported?(mod, :test, 2)
     end
 
@@ -56,7 +58,12 @@ defmodule Ecto.FunctionTest do
       end
       """
 
-      assert match?([{^mod, _}], Code.compile_string(code))
+      log =
+        capture_log(fn ->
+          assert [{^mod, _}] = Code.compile_string(code)
+        end)
+
+      assert log =~ "func/arity syntax is deprecated"
       assert macro_exported?(mod, :test, 2)
     end
 
@@ -69,7 +76,7 @@ defmodule Ecto.FunctionTest do
       end
       """
 
-      assert match?([{^mod, _}], Code.compile_string(code))
+      assert [{^mod, _}] = Code.compile_string(code)
       assert macro_exported?(mod, :test, 1)
       assert macro_exported?(mod, :test, 2)
     end
@@ -132,7 +139,11 @@ defmodule Ecto.FunctionTest do
       end
       """
 
-      assert match?([{^mod, _}], Code.compile_string(code))
+      _ =
+        capture_log(fn ->
+          assert [{^mod, _}] = Code.compile_string(code)
+        end)
+
       assert macro_exported?(mod, :foo, 0)
       assert macro_exported?(mod, :bar, 0)
       assert macro_exported?(mod, :baz, 0)
@@ -147,16 +158,16 @@ defmodule Ecto.FunctionTest do
       result = Repo.all(from(item in "example", select: cbrt(item.value)))
 
       expected = [
-        1.0,
-        1.2599210498948732,
-        1.4422495703074083,
-        1.5874010519681996,
-        1.709975946676697,
-        1.8171205928321397,
-        1.9129311827723892,
-        2.0,
-        2.080083823051904,
-        2.154434690031884
+        1.00000000,
+        1.25992104,
+        1.44224957,
+        1.58740105,
+        1.70997594,
+        1.81712059,
+        1.91293118,
+        2.00000000,
+        2.08008382,
+        2.15443469
       ]
 
       for {res, exp} <- Enum.zip(result, expected) do
@@ -173,16 +184,16 @@ defmodule Ecto.FunctionTest do
       result = Repo.all(from(item in "example", select: sqrt(item.value)))
 
       expected = [
-        1.000000000000000,
-        1.414213562373095,
-        1.732050807568877,
-        2.000000000000000,
-        2.236067977499790,
-        2.449489742783178,
-        2.645751311064591,
-        2.828427124746190,
-        3.000000000000000,
-        3.162277660168379
+        1.00000000,
+        1.41421356,
+        1.73205080,
+        2.00000000,
+        2.23606797,
+        2.44948974,
+        2.64575131,
+        2.82842712,
+        3.00000000,
+        3.16227766
       ]
 
       for {res, exp} <- Enum.zip(result, expected) do
