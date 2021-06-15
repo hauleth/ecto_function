@@ -18,11 +18,10 @@ defmodule Ecto.Function do
 
       import Ecto.Function
 
-      defqueryfunc foo                    # Define function without params
-      defqueryfunc bar(a, b)              # Explicit parameter names
-      defqueryfunc baz/1                  # Define function using arity
-      defqueryfunc qux(a, b \\ 0)         # Define function with default arguments
-      defqueryfunc quux/1, for: "db_quux" # Define with alternative DB call
+      defq foo                    # Define function without params
+      defq bar(a, b)              # Explicit parameter names
+      defq baz(a, b \\ 0)         # Define function with default arguments
+      defq qux(a), for: "db_qux"  # Define with alternative DB call
 
   Then calling such functions in query would be equivalent to:
 
@@ -32,17 +31,14 @@ defmodule Ecto.Function do
       from q in "bars", select: %{bar: bar(q.a, q.b)}
       # => SELECT bar(bars.a, bars.b) AS bar FROM bars
 
-      from q in "bazs", where: baz(q.a) == true
-      # => SELECT * FROM bazs WHERE baz(bazs.a) = TRUE
-
-      from q in "quxs", select: %{one: qux(q.a), two: qux(q.a, q.b)}
+      from q in "bazs", select: %{one: baz(q.a), two: baz(q.a, q.b)}
       # => SELECT
-      #      qux(quxs.a, 0) AS one,
-      #      qux(quxs.a, quxs.b) AS two
-      #    FROM "quxs"
+      #      baz(bazs.a, 0) AS one,
+      #      baz(bazs.a, bazs.b) AS two
+      #    FROM "bazs"
 
-      from q in "quuxs", select: %{quux: quux(q.a)}
-      # => SELECT db_quux(quuxs.a) FROM quuxs
+      from q in "quxs", select: %{qux: qux(q.a)}
+      # => SELECT db_qux(quxs.a) FROM quxs
 
   ## Gotchas
 
@@ -59,60 +55,50 @@ defmodule Ecto.Function do
 
   [extract]: https://www.postgresql.org/docs/current/static/functions-datetime.html#functions-datetime-extract
   """
-  defmacro defqueryfunc(definition, opts \\ [])
+  defmacro defq(definition, opts \\ []), do: build(:defmacro, __CALLER__, definition, opts)
 
-  defmacro defqueryfunc({:/, _, [{name, _, _}, params_count]}, opts)
-           when is_atom(name) and is_integer(params_count) do
-    require Logger
+  defmacro defqp(definition, opts \\ []), do: build(:defmacrop, __CALLER__, definition, opts)
 
-    opts = Keyword.put_new(opts, :for, name)
-    params = Macro.generate_arguments(params_count, Elixir)
-
-    Logger.warn("""
-    func/arity syntax is deprecated, instead use:
-
-        defqueryfunc #{Macro.to_string(quote do: unquote(name)(unquote_splicing(params)))}
-    """)
-
-    macro(name, params, __CALLER__, opts)
-  end
-
-  defmacro defqueryfunc({name, _, params}, opts)
-           when is_atom(name) and is_list(params) do
+  defp build(macro, caller, {name, _, params}, opts)
+       when is_atom(name) and is_list(params) do
     opts = Keyword.put_new(opts, :for, name)
 
-    macro(name, params, __CALLER__, opts)
+    macro(macro, name, params, caller, opts)
   end
 
-  defmacro defqueryfunc({name, _, _}, opts) when is_atom(name) do
+  defp build(macro, caller, {name, _, _}, opts) when is_atom(name) do
     opts = Keyword.put_new(opts, :for, name)
 
-    macro(name, [], __CALLER__, opts)
+    macro(macro, name, [], caller, opts)
   end
 
-  defmacro defqueryfunc(tree, _) do
+  defp build(_, caller, tree, _) do
     raise CompileError,
-      file: __CALLER__.file,
-      line: __CALLER__.line,
+      file: caller.file,
+      line: caller.line,
       description: "Unexpected query function definition #{Macro.to_string(tree)}."
   end
 
-  defp macro(name, params, caller, opts) do
-    sql_name = Keyword.fetch!(opts, :for)
-    {query, args} = build_query(params, caller)
+  defp macro(macro, name, params, caller, opts) do
+    body =
+      case Keyword.fetch(opts, :do) do
+        {:ok, ast} ->
+          EctoFunction.BodyBuilder.build(ast, params)
+
+        _ ->
+          sql_name = Keyword.fetch!(opts, :for)
+          {query, args} = build_query(params, caller)
+
+          fcall = "#{sql_name}(#{query})"
+
+          quote bind_quoted: [args: [fcall | args]] do
+            quote do: fragment(unquote_splicing(args))
+          end
+      end
 
     quote do
-      defmacro unquote(name)(unquote_splicing(params)) do
-        unquote(body(sql_name, query, args))
-      end
+      unquote(macro)(unquote(name)(unquote_splicing(params)), do: unquote(body))
     end
-  end
-
-  defp body(name, query, args) do
-    fcall = "#{name}(#{query})"
-    args = Enum.map(args, &{:unquote, [], [&1]})
-
-    {:quote, [], [[do: {:fragment, [], [fcall | args]}]]}
   end
 
   defp build_query(args, caller) do
