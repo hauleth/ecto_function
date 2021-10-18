@@ -1,0 +1,67 @@
+name: CI
+
+on: [pull_request, push]
+
+jobs:
+
+  build:
+    name: Build OTP ${{ matrix.otp }} / Elixir ${{ matrix.elixir }}
+    runs-on: ubuntu-18.04
+
+    services:
+      pg:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ecto_function_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+        ports:
+          - 5432:5432
+        volumes:
+          - /var/run/postgresql:/var/run/postgresql
+    
+    strategy:
+      matrix:
+        include:
+          - elixir: 1.10.4
+            otp: 21.3
+          - elixir: 1.11.4
+            otp: 23.2
+          - elixir: 1.12.0
+            otp: 24.0
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup Elixir and Erlang
+      uses: erlef/setup-beam@v1
+      with:
+        otp-version: ${{ matrix.otp }}
+        elixir-version: ${{ matrix.elixir }}
+
+    - uses: actions/cache@v2
+      with:
+        path: |
+          deps
+          _build
+        key: mix-${{matrix.elixir}}-${{matrix.otp}}-${{ hashFiles('**/mix.lock') }}
+        restore-keys: |
+          mix-
+
+    - run: mix deps.get
+
+    - run: mix format --check-formatted
+
+    - run: mix deps.compile
+
+    - run: mix compile --warnings-as-errors
+
+    - run: mix test
+
+    - name: Run credo with reviewdog
+      uses: red-shirts/reviewdog-action-credo@v1
+      with:
+        github_token: ${{ secrets.github_token }}

@@ -6,6 +6,6 @@ config :logger, level: :warn
 
 config :ecto_function, Ecto.Integration.Repo,
   username: "postgres",
-  socket_dir: System.get_env("PGHOST"),
+  password: "postgres",
   database: "ecto_function_test",
   pool: Ecto.Adapters.SQL.Sandbox
