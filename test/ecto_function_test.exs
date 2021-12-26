@@ -1,13 +1,13 @@
 defmodule Functions do
   import Ecto.Function
 
-  defqueryfunc cbrt(dp)
+  defq cbrt(dp)
 
-  defqueryfunc sqrt / 1
+  defq sqrt(a)
 
-  defqueryfunc regr_syy(y, x \\ 0)
+  defq regr_syy(y, x \\ 0)
 
-  defqueryfunc regr_x(y \\ 0, x), for: "regr_sxx"
+  defq regr_x(y \\ 0, x), for: "regr_sxx"
 end
 
 defmodule Ecto.FunctionTest do
@@ -30,8 +30,8 @@ defmodule Ecto.FunctionTest do
   end
 
   describe "compilation" do
-    setup do
-      mod = String.to_atom("Elixir.Test#{System.unique_integer([:positive])}")
+    setup ctx do
+      mod = Module.concat([__MODULE__, "Test", "Example#{ctx.line}"])
 
       {:ok, mod: mod}
     end
@@ -41,29 +41,11 @@ defmodule Ecto.FunctionTest do
       import Ecto.Function
 
       defmodule :'#{mod}' do
-        defqueryfunc test(a, b)
+        defq test(a, b)
       end
       """
 
       assert [{^mod, _}] = Code.compile_string(code)
-      assert macro_exported?(mod, :test, 2)
-    end
-
-    test "with defined macro using slashed syntax compiles", %{mod: mod} do
-      code = """
-      import Ecto.Function
-
-      defmodule :'#{mod}' do
-        defqueryfunc test/2
-      end
-      """
-
-      log =
-        capture_log(fn ->
-          assert [{^mod, _}] = Code.compile_string(code)
-        end)
-
-      assert log =~ "func/arity syntax is deprecated"
       assert macro_exported?(mod, :test, 2)
     end
 
@@ -72,7 +54,7 @@ defmodule Ecto.FunctionTest do
       import Ecto.Function
 
       defmodule :'#{mod}' do
-        defqueryfunc test(a, b \\\\ 1)
+        defq test(a, b \\\\ 1)
       end
       """
 
@@ -81,29 +63,12 @@ defmodule Ecto.FunctionTest do
       assert macro_exported?(mod, :test, 2)
     end
 
-    test "generated code" do
-      result_ast =
-        Macro.expand_once(
-          quote do
-            Ecto.Function.defqueryfunc(test(a, b))
-          end,
-          __ENV__
-        )
-
-      assert {:defmacro, _, macro} = result_ast
-      assert [{:test, _, [{:a, _, _}, {:b, _, _}]}, [do: body]] = macro
-      assert {:quote, _, [[do: quoted]]} = body
-      assert {:fragment, _, [sql_string | params]} = quoted
-      assert sql_string =~ ~r/test\(\?,\s*\?\)/
-      for param <- params, do: assert({:unquote, _, _} = param)
-    end
-
     test "do not compiles when params aren't correct", %{mod: mod} do
       code = """
       import Ecto.Function
 
       defmodule :'#{mod}' do
-        defqueryfunc test(a, foo(funky))
+        defq test(a, foo(funky))
       end
       """
 
@@ -119,7 +84,7 @@ defmodule Ecto.FunctionTest do
       import Ecto.Function
 
       defmodule :'#{mod}' do
-        defqueryfunc "foo"
+        defq "foo"
       end
       """
 
@@ -133,9 +98,9 @@ defmodule Ecto.FunctionTest do
       import Ecto.Function
 
       defmodule :'#{mod}' do
-        defqueryfunc foo
-        defqueryfunc bar/0
-        defqueryfunc baz()
+        defq foo
+        defq baz()
+        defqp bar
       end
       """
 
@@ -145,8 +110,8 @@ defmodule Ecto.FunctionTest do
         end)
 
       assert macro_exported?(mod, :foo, 0)
-      assert macro_exported?(mod, :bar, 0)
       assert macro_exported?(mod, :baz, 0)
+      refute macro_exported?(mod, :bar, 0)
     end
   end
 
