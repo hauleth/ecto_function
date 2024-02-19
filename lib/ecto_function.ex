@@ -51,7 +51,7 @@ defmodule Ecto.Function do
   macro that will handle such case.
 
       defmacro extract(from, field) do
-        query do: fragment("extract(? FROM ?)", field, from)
+        quote do: fragment("extract(? FROM ?)", field, from)
       end
 
   This case probably will never be supported in this library and you should
